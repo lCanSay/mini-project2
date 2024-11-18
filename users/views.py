@@ -1,26 +1,16 @@
-# views.py
-from django.core.cache import cache
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from djoser.views import UserViewSet
-from rest_framework.permissions import IsAuthenticated
-from users.models import User
-from .serializers import CustomUserCreateSerializer, CustomUserSerializer
+from rest_framework import viewsets
+from .models import User
+from .serializers import CustomUserSerializer, CustomUserCreateSerializer
+from rest_framework.permissions import AllowAny
 
-
-class CustomUserViewSet(UserViewSet):
+class CustomUserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = CustomUserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
-class UserDetailView(APIView):
-    def get(self, request, pk):
-        user = cache.get(f'user_{pk}')
-        if not user:
-            try:
-                user = User.objects.get(pk=pk)
-                cache.set(f'user_{pk}', user, timeout=600)
-            except User.DoesNotExist:
-                return Response({'detail': 'User not found'}, status=404)
-        
-        return Response({'username': user.username, 'role': user.role})
+    serializer_class = CustomUserSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return CustomUserCreateSerializer
+        return CustomUserSerializer 
+
